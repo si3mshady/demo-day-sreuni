@@ -3,10 +3,24 @@ provider "aws" {
   region = "us-east-1" # Change to your desired region
 }
 
+
+variable "hosted_zone_id" {
+
+    default = "Z086548UEMAS55"
+  
+}
 # Create security group
 resource "aws_security_group" "instance_sg" {
   name        = "allow-all-my-ip"
-  description = "allow all from my ip"
+  description = "allow all from my IP"
+
+  # Allow all outbound traffic
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 # Add inbound rule to allow all ports from your IP address
@@ -16,10 +30,10 @@ resource "aws_security_group_rule" "allow_all_ports" {
   from_port         = 0
   to_port           = 0
   protocol          = "-1"
-  cidr_blocks       = ["70.224.95.9/32"] # Replace with your IP address
+  cidr_blocks       = ["70.24.9.9/32"] # Replace with your IP address
 }
 
-# Create EC2 instance
+# Create EC2 instance for prom
 resource "aws_instance" "prom" {
   ami           = "ami-0c88b8560fd9b0353" # Change to your desired AMI ID
   instance_type = "t2.large" # Change to your desired instance type
@@ -28,12 +42,11 @@ resource "aws_instance" "prom" {
   tags = {
     Name = "demo-prom-server"
   }
-
 }
 
-# Create EC2 instance
+# Create EC2 instance for appserver-exporter
 resource "aws_instance" "appserver-exporter" {
-  ami           = "ami-05fba1dd756df8ac0" # custom ami
+  ami           = "ami-05fba1dd756df8ac0" # custom AMI
   instance_type = "t2.large" # Change to your desired instance type
   vpc_security_group_ids = [aws_security_group.instance_sg.id] # Attach security group
   key_name = "sreuni"
@@ -43,23 +56,22 @@ resource "aws_instance" "appserver-exporter" {
   }
 
   user_data = <<-EOF
-              #!/bin/bash
-              git clone https://github.com/si3mshady/demo-day-sreuni.git
-              cd /demo-day-sreuni
-              sudo docker build -t . taban-expense-app && sudo docker run -p 80:8501 taban-expense-app
-              EOF
+    #!/bin/bash
+    git clone https://github.com/si3mshady/demo-day-sreuni.git
+    cd /demo-day-sreuni
+    sudo docker build  . -t taban-expense-app && sudo docker run -p 80:8501 taban-expense-app
+    EOF
 }
 
-# Create Elastic IP
+# Create Elastic IP for prom instance
 resource "aws_eip" "eip" {
   instance = aws_instance.prom.id
 }
 
-# Create Elastic IP
+# Create Elastic IP for appserver-exporter instance
 resource "aws_eip" "eip2" {
   instance = aws_instance.appserver-exporter.id
 }
-
 
 # Create Route 53 record
 resource "aws_route53_zone" "fqdn" {
@@ -67,8 +79,8 @@ resource "aws_route53_zone" "fqdn" {
 }
 
 resource "aws_route53_record" "fqdn_record" {
-  zone_id = aws_route53_zone.fqdn.zone_id
-  name    = "sreuniversity.org"
+  zone_id = var.hosted_zone_id 
+  name    = "demo.sreuniversity.org"
   type    = "A"
   ttl     = "300"
   records = [aws_eip.eip2.public_ip]
