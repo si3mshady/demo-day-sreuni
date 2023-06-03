@@ -21,26 +21,21 @@ resource "aws_security_group_rule" "allow_all_ports" {
 
 # Create EC2 instance
 resource "aws_instance" "prom" {
-  ami           = "prom-ami" # Change to your desired AMI ID
+  ami           = "ami-0c88b8560fd9b0353" # Change to your desired AMI ID
   instance_type = "t2.large" # Change to your desired instance type
-  security_group_ids = [aws_security_group.instance_sg.id] # Attach security group
+  vpc_security_group_ids = [aws_security_group.instance_sg.id] # Attach security group
 
   tags = {
     Name = "demo-prom-server"
   }
 
-  user_data = <<-EOF
-              #!/bin/bash
-             
-             
-              EOF
 }
 
 # Create EC2 instance
-resource "aws_instance" "exporter" {
-  ami           = "exporter-ami" # Change to your desired AMI ID
+resource "aws_instance" "appserver-exporter" {
+  ami           = "ami-05fba1dd756df8ac0" # custom ami
   instance_type = "t2.large" # Change to your desired instance type
-  security_group_ids = [aws_security_group.instance_sg.id] # Attach security group
+  vpc_security_group_ids = [aws_security_group.instance_sg.id] # Attach security group
 
   tags = {
     Name = "demo-exporter-appserver"
@@ -48,20 +43,20 @@ resource "aws_instance" "exporter" {
 
   user_data = <<-EOF
               #!/bin/bash
-             
-             
+              git clone https://github.com/si3mshady/demo-day-sreuni.git
+              cd /demo-day-sreuni
+              sudo docker build -t . taban-expense-app && sudo docker run -p 80:8501 taban-expense-app
               EOF
 }
 
-
 # Create Elastic IP
 resource "aws_eip" "eip" {
-  instance = aws_instance.appserver.id
+  instance = aws_instance.prom.id
 }
 
 # Create Elastic IP
 resource "aws_eip" "eip2" {
-  instance = aws_instance.exporter.id
+  instance = aws_instance.appserver-exporter.id
 }
 
 
