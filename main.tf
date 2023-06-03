@@ -24,7 +24,7 @@ resource "aws_instance" "prom" {
   ami           = "ami-0c88b8560fd9b0353" # Change to your desired AMI ID
   instance_type = "t2.large" # Change to your desired instance type
   vpc_security_group_ids = [aws_security_group.instance_sg.id] # Attach security group
-
+  key_name = "sreuni"
   tags = {
     Name = "demo-prom-server"
   }
@@ -36,6 +36,7 @@ resource "aws_instance" "appserver-exporter" {
   ami           = "ami-05fba1dd756df8ac0" # custom ami
   instance_type = "t2.large" # Change to your desired instance type
   vpc_security_group_ids = [aws_security_group.instance_sg.id] # Attach security group
+  key_name = "sreuni"
 
   tags = {
     Name = "demo-exporter-appserver"
